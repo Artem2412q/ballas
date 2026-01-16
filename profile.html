@@ -214,10 +214,37 @@
   <script src="script.js"></script>
 
   <script type="module">
-    import { auth, db, storage } from './firebase-config.js';
-    import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-    import { doc, getDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-    import { ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
+    import { isDemoMode, getDemoUser, getDemoCharacterByUid, upsertDemoCharacter } from './demo-store.js';
+
+    const DEMO = isDemoMode();
+
+    let auth = null, db = null, storage = null;
+    let onAuthStateChanged = null;
+    let doc = null, getDoc = null, setDoc = null, serverTimestamp = null;
+    let ref = null, uploadBytes = null, getDownloadURL = null;
+
+    if (!DEMO) {
+      const cfg = await import('./firebase-config.js');
+      auth = cfg.auth; db = cfg.db; storage = cfg.storage;
+      const authMod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+      onAuthStateChanged = authMod.onAuthStateChanged;
+      const fsMod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+      doc = fsMod.doc; getDoc = fsMod.getDoc; setDoc = fsMod.setDoc; serverTimestamp = fsMod.serverTimestamp;
+      const stMod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js');
+      ref = stMod.ref; uploadBytes = stMod.uploadBytes; getDownloadURL = stMod.getDownloadURL;
+    } else {
+      // Minimal Firestore-like wrappers for demo mode
+      doc = (_db, _col, id) => ({ id });
+      getDoc = async (d) => {
+        const obj = getDemoCharacterByUid(d.id);
+        return { exists: () => !!obj, data: () => obj };
+      };
+      setDoc = async (d, payload, _opts) => {
+        upsertDemoCharacter(d.id, payload);
+      };
+      serverTimestamp = () => new Date().toISOString();
+      onAuthStateChanged = (_auth, cb) => cb(getDemoUser() ? { uid: getDemoUser().uid, email: getDemoUser().email } : null);
+    }
 
     const $ = (id) => document.getElementById(id);
     const statusNote = $('statusNote');
@@ -230,8 +257,15 @@
     let currentSlug = null;
     let hasExisting = false;
 
+    // Slug that works with Cyrillic + Latin names.
+    // Keep letters/digits (incl. \u0400-\u04FF), replace spaces with '-', collapse dashes.
     function slugify(s){
-      return (s || '').trim().toLowerCase().replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-');
+      const base = (s || '').trim().toLowerCase();
+      return base
+        .replace(/[^0-9a-z\u0400-\u04FF\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '');
     }
 
     function ageAt(d){
@@ -256,8 +290,20 @@
 
       currentUid = user.uid;
       // Load existing character (one account = one character)
-      const refDoc = doc(db, 'characters', user.uid);
-      const snap = await getDoc(refDoc);
+      let snap = null;
+      try {
+        const refDoc = doc(db, 'characters', user.uid);
+        snap = await getDoc(refDoc);
+      } catch (e) {
+        console.error('Firestore getDoc failed:', e);
+        const code = e?.code || '';
+        const hint = (code === 'permission-denied')
+          ? 'Нет доступа к Firestore. Проверь правила: чтение всем, запись только своему uid.'
+          : 'Не удалось загрузить профиль из базы. Проверь подключение и правила Firestore.';
+        statusNote.textContent = hint;
+        return;
+      }
+
       hasExisting = snap.exists();
       if (hasExisting) {
         const data = snap.data();
@@ -338,14 +384,37 @@
         ops2026: $('ops2026').value.trim(),
       };
 
-      const slug = slugify(name);
+      // If the name is fully non-latin/non-cyrillic or empty, fall back to uid.
+      const slug = slugify(name) || `uid-${String(currentUid || '')}`;
 
       let photoUrl = null;
       const file = photoInput.files && photoInput.files[0];
       if (file) {
-        const pRef = ref(storage, `photos/${currentUid}`);
-        await uploadBytes(pRef, file, { contentType: file.type });
-        photoUrl = await getDownloadURL(pRef);
+        if (DEMO) {
+          // GitHub Pages demo mode: store image as DataURL in localStorage (small files only).
+          photoUrl = await new Promise((resolve) => {
+            const r = new FileReader();
+            r.onload = () => resolve(String(r.result || ''));
+            r.onerror = () => resolve(null);
+            r.readAsDataURL(file);
+          });
+          if (!photoUrl) alert('Не удалось прочитать файл. Попробуй другой формат/файл.');
+        } else {
+          try {
+            const ext = (file.name || '').split('.').pop() || 'jpg';
+            const pRef = ref(storage, `photos/${currentUid}.${ext}`);
+            await uploadBytes(pRef, file, { contentType: file.type || 'image/jpeg' });
+            photoUrl = await getDownloadURL(pRef);
+          } catch (e) {
+            const code = e?.code || '';
+            const hint = (code === 'storage/unauthorized')
+              ? 'Нет доступа к Storage. Проверь правила Storage (разрешить загрузку только авторизованным) и что домен сайта добавлен в Authorized domains.'
+              : (code === 'storage/canceled')
+                ? 'Загрузка отменена.'
+                : 'Не удалось загрузить фото. Проверь правила Storage и попробуй ещё раз.';
+            alert(hint);
+          }
+        }
       }
 
       const payload = {
@@ -366,7 +435,22 @@
       // Keep existing photoUrl if user didn't upload a new one.
       if (!photoUrl) delete payload.photoUrl;
 
-      await setDoc(doc(db, 'characters', currentUid), payload, { merge: true });
+      try {
+        await setDoc(doc(db, 'characters', currentUid), payload, { merge: true });
+      } catch (e) {
+        console.error('Firestore setDoc failed:', e);
+        const code = e?.code || '';
+        const hint = (code === 'permission-denied')
+          ? 'Сохранение запрещено правилами Firestore. В Rules нужно: read: true; write: только своему uid.'
+          : (code === 'unauthenticated')
+            ? 'Нужно быть авторизованным. Перезайди и попробуй снова.'
+            : (code === 'unavailable')
+              ? 'Firestore недоступен. Проверь сеть/VPN и повтори.'
+              : 'Не удалось сохранить профиль. Проверь подключение и правила Firestore.';
+        alert(hint);
+        statusNote.textContent = hint;
+        return;
+      }
 
       currentSlug = slug;
       openPublic.hidden = false;

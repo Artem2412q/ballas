@@ -15,5 +15,7 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+// Helpful default: RU strings in Auth error pages (where applicable)
+try { auth.languageCode = 'ru'; } catch (_) {}
 export const db = getFirestore(app);
 export const storage = getStorage(app);

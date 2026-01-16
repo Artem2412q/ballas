@@ -56,11 +56,6 @@
     setTheme(cur === 'dark' ? 'light' : 'dark');
   });
 
-  $('#themeBtn2')?.addEventListener('click', () => {
-    const cur = html.getAttribute('data-theme') || 'dark';
-    setTheme(cur === 'dark' ? 'light' : 'dark');
-  });
-
   // ---------- Reveal (works for dynamically inserted blocks) ----------
   const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   let revealObserver = null;
@@ -520,6 +515,16 @@
     const m = ref.getMonth() - dob.getMonth();
     if (m < 0 || (m === 0 && ref.getDate() < dob.getDate())) age -= 1;
     return age;
+  };
+
+  // Slug that works with Cyrillic + Latin names.
+  const slugify = (s) => {
+    const base = String(s || '').trim().toLowerCase();
+    return base
+      .replace(/[^0-9a-z\u0400-\u04FF\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '');
   };
 
   const heatDots = (n) => {

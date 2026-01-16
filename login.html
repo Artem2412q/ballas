@@ -73,26 +73,109 @@
   <script type="module" src="./auth-ui.js"></script>
   <script src="script.js"></script>
   <script type="module">
-    import { auth } from './firebase-config.js';
-    import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+    import { isDemoMode, getDemoUser, setDemoUser } from './demo-store.js';
+
+    const DEMO = isDemoMode();
+
+    let auth = null;
+    let signInWithEmailAndPassword = null;
+    let createUserWithEmailAndPassword = null;
+
+    if (!DEMO) {
+      const cfg = await import('./firebase-config.js');
+      auth = cfg.auth;
+      const mod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+      signInWithEmailAndPassword = mod.signInWithEmailAndPassword;
+      createUserWithEmailAndPassword = mod.createUserWithEmailAndPassword;
+    }
 
     const $ = (id) => document.getElementById(id);
 
+    const note = document.querySelector('.note');
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    // NOTE: In this GitHub-ready build we fall back to DEMO mode under file://,
+    // so users can still register/login locally. We keep a small hint, but we
+    // do NOT disable buttons.
+    if (location.protocol === 'file:' && note) {
+      note.textContent = 'Подсказка: сайт открыт как файл (file://). Сейчас включён демо‑режим (данные сохраняются в браузере). Для Firebase‑режима открой через хостинг/сервер.';
+    }
+
+    const setBusy = (busy) => {
+      $('loginBtn').disabled = busy;
+      $('regBtn').disabled = busy;
+      $('loginBtn').style.opacity = busy ? '0.7' : '';
+      $('regBtn').style.opacity = busy ? '0.7' : '';
+    };
+
+    const readCreds = () => {
+      const email = ($('email').value || '').trim();
+      const password = $('password').value || '';
+      if (!emailRe.test(email)) {
+        throw new Error('Введите корректный email (например name@gmail.com).');
+      }
+      if (password.length < 6) {
+        throw new Error('Пароль должен быть минимум 6 символов.');
+      }
+      return { email, password };
+    };
+
     $('loginBtn').addEventListener('click', async () => {
       try {
-        await signInWithEmailAndPassword(auth, $('email').value.trim(), $('password').value);
-        location.href = 'profile.html';
+        setBusy(true);
+        const { email, password } = readCreds();
+        if (DEMO) {
+          const u = getDemoUser();
+          if (!u || u.email !== email) throw new Error('Демо‑режим GitHub Pages: сначала нажми «Регистрация» (локально), затем «Войти».');
+          location.href = 'profile.html';
+        } else {
+          await signInWithEmailAndPassword(auth, email, password);
+          location.href = 'profile.html';
+        }
       } catch (e) {
-        alert('Ошибка входа: ' + (e?.message || e));
+        console.error('Login failed:', e);
+        const msg = (e?.code === 'auth/invalid-credential')
+          ? 'Неверный email или пароль.'
+          : (e?.code === 'auth/operation-not-allowed')
+            ? 'В Firebase не включён способ входа Email/Password. Открой Firebase Console → Authentication → Sign-in method → Email/Password → Enable.'
+            : (e?.code === 'auth/network-request-failed')
+              ? 'Сетевая ошибка. Проверь интернет/VPN/блокировки и попробуй снова.'
+          : (e?.message || String(e));
+        if (note) note.textContent = msg;
+        else alert('Ошибка входа: ' + msg);
+      } finally {
+        setBusy(false);
       }
     });
 
     $('regBtn').addEventListener('click', async () => {
       try {
-        await createUserWithEmailAndPassword(auth, $('email').value.trim(), $('password').value);
-        location.href = 'profile.html';
+        setBusy(true);
+        const { email, password } = readCreds();
+        if (DEMO) {
+          setDemoUser(email);
+          location.href = 'profile.html';
+        } else {
+          await createUserWithEmailAndPassword(auth, email, password);
+          location.href = 'profile.html';
+        }
       } catch (e) {
-        alert('Ошибка регистрации: ' + (e?.message || e));
+        console.error('Registration failed:', e);
+        const msg = (e?.code === 'auth/email-already-in-use')
+          ? 'Этот email уже зарегистрирован. Попробуй «Войти».'
+          : (e?.code === 'auth/invalid-email')
+            ? 'Email выглядит некорректно. Проверь формат.'
+            : (e?.code === 'auth/operation-not-allowed')
+              ? 'В Firebase не включён способ регистрации Email/Password. Открой Firebase Console → Authentication → Sign-in method → Email/Password → Enable.'
+              : (e?.code === 'auth/network-request-failed')
+                ? 'Сетевая ошибка. Проверь интернет/VPN/блокировки и попробуй снова.'
+            : (e?.code === 'auth/unauthorized-domain')
+              ? 'Домен не разрешён в Firebase Auth. Добавь домен сайта в Authentication → Settings → Authorized domains.'
+              : (e?.message || String(e));
+        if (note) note.textContent = msg;
+        else alert('Ошибка регистрации: ' + msg);
+      } finally {
+        setBusy(false);
       }
     });
   </script>

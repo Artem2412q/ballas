@@ -85,14 +85,24 @@
   <button class="btn btn--primary toTop" id="toTop" type="button" aria-label="Наверх">↑ Наверх</button>
 
   <script type="module">
-    import { db } from './firebase-config.js';
-    import {
-      collection,
-      query,
-      where,
-      limit,
-      getDocs
-    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    import { isDemoMode, getDemoCharacterBySlug, getDemoCharacterByUid } from './demo-store.js';
+
+    const DEMO = isDemoMode();
+
+    let db = null;
+    let collection = null, query = null, where = null, limit = null, getDocs = null, doc = null, getDoc = null;
+    if (!DEMO) {
+      const cfg = await import('./firebase-config.js');
+      db = cfg.db;
+      const fsMod = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+      collection = fsMod.collection;
+      query = fsMod.query;
+      where = fsMod.where;
+      limit = fsMod.limit;
+      getDocs = fsMod.getDocs;
+      doc = fsMod.doc;
+      getDoc = fsMod.getDoc;
+    }
 
     const slug = new URLSearchParams(location.search).get('slug') || '';
 
@@ -103,15 +113,41 @@
         return;
       }
 
-      const q = query(collection(db, 'characters'), where('slug', '==', slug), limit(1));
-      const snap = await getDocs(q);
-      if (snap.empty) {
+      let c = null;
+      try {
+        if (DEMO) {
+          if (slug.startsWith('uid-') && slug.length > 4) {
+            const uid = slug.slice(4);
+            c = getDemoCharacterByUid(uid);
+          }
+          if (!c) c = getDemoCharacterBySlug(slug);
+        } else {
+          if (slug.startsWith('uid-') && slug.length > 4) {
+            const uid = slug.slice(4);
+            const s = await getDoc(doc(db, 'characters', uid));
+            if (s.exists()) c = s.data();
+          }
+          if (!c) {
+            const q = query(collection(db, 'characters'), where('slug', '==', slug), limit(1));
+            const snap = await getDocs(q);
+            if (!snap.empty) c = snap.docs[0].data();
+          }
+        }
+      } catch (e) {
+        console.error('Firestore load failed:', e);
+        const code = e?.code || '';
+        state.querySelector('.panel__title').textContent = 'Ошибка загрузки';
+        state.querySelector('.panel__sub').textContent = (code === 'permission-denied')
+          ? 'Нет доступа к Firestore (проверь правила чтения)'
+          : 'Проверь подключение и правила Firebase';
+        return;
+      }
+
+      if (!c) {
         state.querySelector('.panel__title').textContent = 'Персонаж не найден';
         state.querySelector('.panel__sub').textContent = slug;
         return;
       }
-
-      const c = snap.docs[0].data();
       state.style.display = 'none';
       profile.style.display = '';
 
