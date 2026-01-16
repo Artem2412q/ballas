@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="ru" data-theme="dark" data-root=".">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Вход и регистрация." />
+  <title>Ballas — Вход</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a class="skip" href="#main">Перейти к содержимому</a>
+
+  <div class="bg" aria-hidden="true">
+    <div class="bg__blob bg__blob--1"></div>
+    <div class="bg__blob bg__blob--2"></div>
+    <div class="bg__blob bg__blob--3"></div>
+    <div class="bg__mesh"></div>
+    <div class="bg__pattern"></div>
+    <div class="bg__vignette"></div>
+  </div>
+
+  <header class="topbar" id="topbar">
+    <div class="progress" aria-hidden="true"><div class="progress__bar" id="scrollProgress"></div></div>
+    <div class="wrap topbar__inner">
+      <a class="brand" href="index.html" aria-label="Ballas — на главную">
+        <span class="brand__mark" aria-hidden="true"></span>
+        <span class="brand__text">
+          <span class="brand__title">Ballas</span>
+          <span class="brand__sub">Login • profile</span>
+        </span>
+      </a>
+      <nav class="nav" aria-label="Навигация">
+        <a class="nav__link" href="index.html">Главная</a>
+        <a class="nav__link" href="characters/index.html">Состав</a>
+        <a class="nav__link" href="profile.html">Профиль</a>
+      </nav>
+      <div class="actions">
+        <a class="btn btn--ghost" data-auth-link href="login.html">Вход</a>
+        <button class="btn btn--ghost" data-logout-btn type="button" hidden>Выйти</button>
+        <button class="btn btn--ghost" id="themeBtn" type="button">🌙 Dark</button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="section wrap" style="padding-top:22px">
+      <div class="panel reveal" style="max-width:520px;margin:0 auto">
+        <div class="panel__head">
+          <div>
+            <div class="panel__title">Авторизация</div>
+            <div class="panel__sub">1 аккаунт = 1 персонаж</div>
+          </div>
+          <span class="badge">auth</span>
+        </div>
+
+        <div class="filters" style="grid-template-columns:1fr; gap:10px">
+          <input class="input" id="email" type="email" autocomplete="email" placeholder="Email" />
+          <input class="input" id="password" type="password" autocomplete="current-password" placeholder="Пароль" />
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px">
+          <button class="btn btn--primary" id="loginBtn" type="button">Войти</button>
+          <button class="btn btn--ghost" id="regBtn" type="button">Регистрация</button>
+        </div>
+
+        <div class="note" style="margin-top:12px">
+          Если это первый вход — жми «Регистрация». После этого анкета создаётся в профиле.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="./auth-ui.js"></script>
+  <script src="script.js"></script>
+  <script type="module">
+    import { auth } from './firebase-config.js';
+    import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+    const $ = (id) => document.getElementById(id);
+
+    $('loginBtn').addEventListener('click', async () => {
+      try {
+        await signInWithEmailAndPassword(auth, $('email').value.trim(), $('password').value);
+        location.href = 'profile.html';
+      } catch (e) {
+        alert('Ошибка входа: ' + (e?.message || e));
+      }
+    });
+
+    $('regBtn').addEventListener('click', async () => {
+      try {
+        await createUserWithEmailAndPassword(auth, $('email').value.trim(), $('password').value);
+        location.href = 'profile.html';
+      } catch (e) {
+        alert('Ошибка регистрации: ' + (e?.message || e));
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="ru" data-theme="dark" data-root="." data-auth-required="1">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Личный профиль: RP‑анкета и фото." />
+  <title>Ballas — Профиль</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a class="skip" href="#main">Перейти к содержимому</a>
+
+  <div class="bg" aria-hidden="true">
+    <div class="bg__blob bg__blob--1"></div>
+    <div class="bg__blob bg__blob--2"></div>
+    <div class="bg__blob bg__blob--3"></div>
+    <div class="bg__mesh"></div>
+    <div class="bg__pattern"></div>
+    <div class="bg__vignette"></div>
+  </div>
+
+  <header class="topbar" id="topbar">
+    <div class="progress" aria-hidden="true"><div class="progress__bar" id="scrollProgress"></div></div>
+    <div class="wrap topbar__inner">
+      <a class="brand" href="index.html" aria-label="Ballas — на главную">
+        <span class="brand__mark" aria-hidden="true"></span>
+        <span class="brand__text">
+          <span class="brand__title">Ballas</span>
+          <span class="brand__sub">Profile • one account = one character</span>
+        </span>
+      </a>
+
+      <nav class="nav" aria-label="Навигация">
+        <a class="nav__link" href="index.html#about">Обзор</a>
+        <a class="nav__link" href="index.html#hood">Район</a>
+        <a class="nav__link" href="characters/index.html">Персонажи</a>
+        <a class="nav__link" href="cases/index.html">Кейсы</a>
+        <a class="nav__link" href="rp/index.html">RP‑досье</a>
+      </nav>
+
+      <div class="actions">
+        <button class="btn btn--ghost" id="themeBtn" type="button">🌙 Dark</button>
+        <a class="btn btn--ghost" data-auth-link href="login.html">Вход</a>
+        <button class="btn btn--ghost" data-logout-btn type="button" hidden>Выйти</button>
+
+        <button class="iconBtn" id="menuBtn" type="button" aria-label="Меню" aria-expanded="false" aria-controls="mobileMenu">
+          <span class="iconBtn__bar"></span>
+          <span class="iconBtn__bar"></span>
+          <span class="iconBtn__bar"></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="mobileMenu" id="mobileMenu" hidden>
+      <div class="wrap mobileMenu__inner">
+        <a class="mobileMenu__link" href="index.html">Главная</a>
+        <a class="mobileMenu__link" href="characters/index.html">Персонажи</a>
+        <a class="mobileMenu__link" href="cases/index.html">Кейсы</a>
+        <a class="mobileMenu__link" href="rp/index.html">RP‑досье</a>
+        <div class="mobileMenu__hint">Меню закрывается по клику на пункт или по Esc.</div>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="section wrap">
+      <div class="panel reveal">
+        <div class="panel__head">
+          <div>
+            <div class="panel__title">Личный профиль</div>
+            <div class="panel__sub">RP‑анкета + фото анфас • сохраняется в database</div>
+          </div>
+          <span class="badge">profile</span>
+        </div>
+
+        <div class="note" id="statusNote" style="margin-bottom:14px">Проверяем авторизацию…</div>
+
+        <form id="profileForm" class="grid2" autocomplete="off">
+          <label class="field">
+            <span class="field__label">Имя (англ.)</span>
+            <input class="input" id="firstName" required placeholder="Marcus" />
+          </label>
+
+          <label class="field">
+            <span class="field__label">Фамилия (англ.)</span>
+            <input class="input" id="lastName" required placeholder="Coleman" />
+          </label>
+
+          <label class="field">
+            <span class="field__label">Alias</span>
+            <input class="input" id="alias" required placeholder="" />
+          </label>
+
+          <label class="field">
+            <span class="field__label">Дата рождения (18+)</span>
+            <input class="input" id="dob" type="date" required />
+          </label>
+
+          <label class="field" style="grid-column:1/-1">
+            <span class="field__label">Теги (через запятую)</span>
+            <input class="input" id="tags" placeholder="davis, diplomacy, intel" />
+          </label>
+
+          <label class="field" style="grid-column:1/-1">
+            <span class="field__label">Фото анфас</span>
+            <input class="input" id="photo" type="file" accept="image/*" />
+            <div class="small" style="margin-top:6px">Рекомендация: квадрат, 512×512. Фото хранится в Storage.</div>
+            <div id="photoPreview" style="margin-top:10px"></div>
+          </label>
+
+          <div class="panel" style="grid-column:1/-1">
+            <div class="panel__head">
+              <div>
+                <div class="panel__title">Масштабная RP‑анкета</div>
+                <div class="panel__sub">структура для 2026 и предыстории</div>
+              </div>
+              <span class="badge">sheet</span>
+            </div>
+
+            <div class="stack">
+              <label class="field">
+                <span class="field__label">Предисловие</span>
+                <textarea class="textarea" id="preface" rows="4" placeholder="Коротко: кто ты, в чём твой стержень, что ты бережёшь."></textarea>
+              </label>
+
+              <label class="field">
+                <span class="field__label">История: начало</span>
+                <textarea class="textarea" id="historyStart" rows="5"></textarea>
+              </label>
+
+              <label class="field">
+                <span class="field__label">История: середина</span>
+                <textarea class="textarea" id="historyMiddle" rows="5"></textarea>
+              </label>
+
+              <label class="field">
+                <span class="field__label">Склейка (поворот/переход)</span>
+                <textarea class="textarea" id="bridge" rows="4"></textarea>
+              </label>
+
+              <label class="field">
+                <span class="field__label">Развитие событий до 2026 года</span>
+                <textarea class="textarea" id="devPre2026" rows="5"></textarea>
+              </label>
+
+              <label class="field">
+                <span class="field__label">Развитие событий в 2026 году</span>
+                <textarea class="textarea" id="dev2026" rows="5"></textarea>
+              </label>
+
+              <label class="field">
+                <span class="field__label">Начало сюжета в 2026: как действуем</span>
+                <textarea class="textarea" id="plotStart2026" rows="5" placeholder="Тон: спокойная группировка; без агрессии, но если противники давят — Ballas отвечает и отстаивает интересы."></textarea>
+              </label>
+
+              <label class="field">
+                <span class="field__label">Мораль группировки (твой взгляд)</span>
+                <textarea class="textarea" id="morality" rows="4"></textarea>
+              </label>
+
+              <label class="field">
+                <span class="field__label">Основные задачи и функции</span>
+                <textarea class="textarea" id="tasks" rows="4"></textarea>
+              </label>
+
+              <label class="field">
+                <span class="field__label">Основной посыл</span>
+                <textarea class="textarea" id="message" rows="3"></textarea>
+              </label>
+
+              <label class="field">
+                <span class="field__label">Финансирование (подробно)</span>
+                <textarea class="textarea" id="funding" rows="6" placeholder="Опиши легальные фасады, схемы дохода и заказные операции как сюжетные поручения (без инструкций)."></textarea>
+              </label>
+
+              <label class="field">
+                <span class="field__label">Отношение с копами (спокойное)</span>
+                <textarea class="textarea" id="cops" rows="3"></textarea>
+              </label>
+
+              <label class="field">
+                <span class="field__label">Кульминация (личная/групповая)</span>
+                <textarea class="textarea" id="climax" rows="4"></textarea>
+              </label>
+
+              <label class="field">
+                <span class="field__label">Операции 2026 (сюжетные линии)</span>
+                <textarea class="textarea" id="ops2026" rows="6" placeholder="Линии: давление, сделки, провалы, компромиссы, не детальные инструкции."></textarea>
+              </label>
+            </div>
+          </div>
+
+          <div style="grid-column:1/-1; display:flex; gap:10px; flex-wrap:wrap">
+            <button class="btn btn--primary" id="saveBtn" type="submit">Сохранить профиль</button>
+            <a class="btn btn--ghost" href="characters/index.html">Открыть состав</a>
+            <a class="btn btn--ghost" id="openPublic" href="#" hidden>Открыть публичную страницу</a>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="wrap footer__inner">
+        <div>Ballas • Profile</div>
+        <button class="btn btn--ghost" id="themeBtn2" type="button">Тема</button>
+      </div>
+    </footer>
+  </main>
+
+  <button class="btn btn--primary toTop" id="toTop" type="button" aria-label="Наверх">↑ Наверх</button>
+
+  <script type="module" src="./auth-ui.js"></script>
+
+  <script src="script.js"></script>
+
+  <script type="module">
+    import { auth, db, storage } from './firebase-config.js';
+    import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+    import { doc, getDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    import { ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
+
+    const $ = (id) => document.getElementById(id);
+    const statusNote = $('statusNote');
+    const form = $('profileForm');
+    const openPublic = $('openPublic');
+    const photoInput = $('photo');
+    const photoPreview = $('photoPreview');
+
+    let currentUid = null;
+    let currentSlug = null;
+    let hasExisting = false;
+
+    function slugify(s){
+      return (s || '').trim().toLowerCase().replace(/[^a-z0-9\s-]/g,'').replace(/\s+/g,'-').replace(/-+/g,'-');
+    }
+
+    function ageAt(d){
+      if (!d) return null;
+      const dob = new Date(d);
+      const now = new Date();
+      let age = now.getFullYear() - dob.getFullYear();
+      const m = now.getMonth() - dob.getMonth();
+      if (m < 0 || (m === 0 && now.getDate() < dob.getDate())) age--;
+      return age;
+    }
+
+    photoInput.addEventListener('change', () => {
+      const f = photoInput.files && photoInput.files[0];
+      if (!f) { photoPreview.innerHTML=''; return; }
+      const url = URL.createObjectURL(f);
+      photoPreview.innerHTML = `<img alt="Превью" src="${url}" style="width:160px; height:160px; object-fit:cover; border-radius:14px; border:1px solid var(--line)" />`;
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return;
+
+      currentUid = user.uid;
+      // Load existing character (one account = one character)
+      const refDoc = doc(db, 'characters', user.uid);
+      const snap = await getDoc(refDoc);
+      hasExisting = snap.exists();
+      if (hasExisting) {
+        const data = snap.data();
+        const [firstName, lastName] = String(data.name || '').split(' ');
+        $('firstName').value = firstName || '';
+        $('lastName').value = lastName || '';
+        $('alias').value = data.alias || '';
+        $('dob').value = data.dob || '';
+        $('tags').value = (data.tags || []).join(', ');
+
+        const rp = data.rp || {};
+        $('preface').value = rp.preface || '';
+        $('historyStart').value = rp.historyStart || '';
+        $('historyMiddle').value = rp.historyMiddle || '';
+        $('bridge').value = rp.bridge || '';
+        $('devPre2026').value = rp.devPre2026 || '';
+        $('dev2026').value = rp.dev2026 || '';
+        $('plotStart2026').value = rp.plotStart2026 || '';
+        $('morality').value = rp.morality || '';
+        $('tasks').value = rp.tasks || '';
+        $('message').value = rp.message || '';
+        $('funding').value = rp.funding || '';
+        $('cops').value = rp.cops || '';
+        $('climax').value = rp.climax || '';
+        $('ops2026').value = rp.ops2026 || '';
+
+        if (data.photoUrl) {
+          photoPreview.innerHTML = `<img alt="Фото" src="${data.photoUrl}" style="width:160px; height:160px; object-fit:cover; border-radius:14px; border:1px solid var(--line)" />`;
+        }
+
+        currentSlug = data.slug || null;
+        if (currentSlug) {
+          openPublic.hidden = false;
+          openPublic.href = `person.html?slug=${encodeURIComponent(currentSlug)}`;
+        }
+
+        statusNote.textContent = 'Профиль загружен. Можно редактировать и сохранять.';
+      } else {
+        statusNote.textContent = 'Профиль ещё не создан. Заполни поля и нажми «Сохранить профиль».';
+      }
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const first = $('firstName').value.trim();
+      const last = $('lastName').value.trim();
+      const dob = $('dob').value;
+
+      const age = ageAt(dob);
+      if (age == null || age < 18) {
+        alert('Персонаж должен быть 18+');
+        return;
+      }
+
+      const name = `${first} ${last}`.trim();
+      const alias = $('alias').value.trim();
+      const tags = $('tags').value
+        .split(',')
+        .map(s => s.trim().toLowerCase())
+        .filter(Boolean)
+        .slice(0, 20);
+
+      const rp = {
+        preface: $('preface').value.trim(),
+        historyStart: $('historyStart').value.trim(),
+        historyMiddle: $('historyMiddle').value.trim(),
+        bridge: $('bridge').value.trim(),
+        devPre2026: $('devPre2026').value.trim(),
+        dev2026: $('dev2026').value.trim(),
+        plotStart2026: $('plotStart2026').value.trim(),
+        morality: $('morality').value.trim(),
+        tasks: $('tasks').value.trim(),
+        message: $('message').value.trim(),
+        funding: $('funding').value.trim(),
+        cops: $('cops').value.trim(),
+        climax: $('climax').value.trim(),
+        ops2026: $('ops2026').value.trim(),
+      };
+
+      const slug = slugify(name);
+
+      let photoUrl = null;
+      const file = photoInput.files && photoInput.files[0];
+      if (file) {
+        const pRef = ref(storage, `photos/${currentUid}`);
+        await uploadBytes(pRef, file, { contentType: file.type });
+        photoUrl = await getDownloadURL(pRef);
+      }
+
+      const payload = {
+        uid: currentUid,
+        name,
+        alias,
+        dob,
+        tags,
+        slug,
+        set: 'Davis',
+        role: 'Member',
+        photoUrl: photoUrl || undefined,
+        rp,
+        updatedAt: serverTimestamp(),
+        ...(hasExisting ? {} : { createdAt: serverTimestamp() }),
+      };
+
+      // Keep existing photoUrl if user didn't upload a new one.
+      if (!photoUrl) delete payload.photoUrl;
+
+      await setDoc(doc(db, 'characters', currentUid), payload, { merge: true });
+
+      currentSlug = slug;
+      openPublic.hidden = false;
+      openPublic.href = `person.html?slug=${encodeURIComponent(slug)}`;
+
+      statusNote.textContent = 'Сохранено. Профиль обновлён и уже в составе.';
+      alert('Профиль сохранён');
+    });
+  </script>
+</body>
+</html>

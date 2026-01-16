@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="ru" data-theme="dark" data-root=".">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Профиль персонажа." />
+  <title>Ballas — Персонаж</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <a class="skip" href="#main">Перейти к содержимому</a>
+
+  <div class="bg" aria-hidden="true">
+    <div class="bg__blob bg__blob--1"></div>
+    <div class="bg__blob bg__blob--2"></div>
+    <div class="bg__blob bg__blob--3"></div>
+    <div class="bg__mesh"></div>
+    <div class="bg__pattern"></div>
+    <div class="bg__vignette"></div>
+  </div>
+
+  <header class="topbar" id="topbar">
+    <div class="progress" aria-hidden="true"><div class="progress__bar" id="scrollProgress"></div></div>
+
+    <div class="wrap topbar__inner">
+      <a class="brand" href="index.html" aria-label="Ballas — на главную">
+        <span class="brand__mark" aria-hidden="true"></span>
+        <span class="brand__text">
+          <span class="brand__title">Ballas</span>
+          <span class="brand__sub">Character • page</span>
+        </span>
+      </a>
+
+      <nav class="nav" aria-label="Навигация">
+        <a class="nav__link" href="characters/index.html">Состав</a>
+        <a class="nav__link" href="cases/index.html">Кейсы</a>
+        <a class="nav__link" href="rp/index.html">RP‑досье</a>
+      </nav>
+
+      <div class="actions">
+        <a class="btn btn--ghost" data-auth-link href="login.html">Вход</a>
+        <button class="btn btn--ghost" data-logout-btn type="button" hidden>Выйти</button>
+        <button class="btn btn--ghost" id="themeBtn" type="button">🌙 Dark</button>
+        <button class="iconBtn" id="menuBtn" type="button" aria-label="Меню" aria-expanded="false" aria-controls="mobileMenu">
+          <span class="iconBtn__bar"></span>
+          <span class="iconBtn__bar"></span>
+          <span class="iconBtn__bar"></span>
+        </button>
+      </div>
+    </div>
+
+    <div class="mobileMenu" id="mobileMenu" hidden>
+      <div class="wrap mobileMenu__inner">
+        <a class="mobileMenu__link" href="index.html">Главная</a>
+        <a class="mobileMenu__link" href="characters/index.html">Состав</a>
+        <a class="mobileMenu__link" href="profile.html">Профиль</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="section wrap" style="padding-top:24px">
+      <div class="panel reveal" id="state">
+        <div class="panel__head">
+          <div>
+            <div class="panel__title">Загрузка профиля…</div>
+            <div class="panel__sub">database</div>
+          </div>
+          <span class="badge">db</span>
+        </div>
+        <p class="p">Если страница пустая — проверь, что персонаж создан в профиле, а ссылка содержит slug.</p>
+      </div>
+
+      <div id="profile" class="grid2" style="display:none"></div>
+    </section>
+
+    <footer class="footer">
+      <div class="wrap footer__inner">
+        <div>Ballas • Person</div>
+        <button class="btn btn--ghost" id="themeBtn2" type="button">Тема</button>
+      </div>
+    </footer>
+  </main>
+
+  <button class="btn btn--primary toTop" id="toTop" type="button" aria-label="Наверх">↑ Наверх</button>
+
+  <script type="module">
+    import { db } from './firebase-config.js';
+    import {
+      collection,
+      query,
+      where,
+      limit,
+      getDocs
+    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+    const slug = new URLSearchParams(location.search).get('slug') || '';
+
+    async function load() {
+      if (!slug) {
+        state.querySelector('.panel__title').textContent = 'Не указан slug';
+        state.querySelector('.panel__sub').textContent = 'person.html?slug=...';
+        return;
+      }
+
+      const q = query(collection(db, 'characters'), where('slug', '==', slug), limit(1));
+      const snap = await getDocs(q);
+      if (snap.empty) {
+        state.querySelector('.panel__title').textContent = 'Персонаж не найден';
+        state.querySelector('.panel__sub').textContent = slug;
+        return;
+      }
+
+      const c = snap.docs[0].data();
+      state.style.display = 'none';
+      profile.style.display = '';
+
+      const photo = c.photoUrl || c.photo || '';
+      const tags = Array.isArray(c.tags) ? c.tags : (typeof c.tags === 'string' ? c.tags.split(',').map(s=>s.trim()).filter(Boolean) : []);
+      const rp = c.rp || {};
+
+      const dobLabel = c.dob ? escapeHtml(c.dob) : '18+';
+      const quick = [
+        { k: 'Роль', v: c.role || '—' },
+        { k: 'Сет', v: c.set || 'Davis' },
+        { k: 'DOB', v: c.dob ? fmtDate(c.dob) : '—' },
+      ];
+
+      const rp2 = {
+        preface: rp.preface,
+        historyStart: rp.historyStart,
+        historyMiddle: rp.historyMiddle,
+        bridge: rp.bridge,
+        devPre2026: rp.devPre2026 || rp.devBefore2026,
+        dev2026: rp.dev2026,
+        plotStart2026: rp.plotStart2026,
+        morality: rp.morality,
+        tasks: rp.tasks,
+        message: rp.message,
+        funding: rp.funding,
+        cops: rp.cops,
+        climax: rp.climax,
+        ops2026: rp.ops2026,
+      };
+
+      profile.innerHTML = `
+        <article class="panel reveal">
+          <div class="panel__head">
+            <div>
+              <div class="panel__title">${escapeHtml(c.name || '—')} <span class="small">${escapeHtml(c.alias || '')}</span></div>
+              <div class="panel__sub">${escapeHtml(c.role || '—')} • ${escapeHtml(c.set || 'Davis')}</div>
+            </div>
+            <span class="badge">${dobLabel}</span>
+          </div>
+
+          <div class="personHero" style="margin-top:12px">
+            <div class="personHero__media">
+              ${photo ? `<img class="personHero__img" alt="Фото анфас" src="${photo}">` : `<div class="personHero__ph">Фото
+              <span class="small">(появится после загрузки)</span></div>`}
+            </div>
+            <div class="personHero__meta">
+              <div class="kv kv--wide">
+                ${quick.map(row => `
+                  <div>
+                    <div class="kv__k">${escapeHtml(row.k)}</div>
+                    <div class="kv__v">${escapeHtml(row.v)}</div>
+                  </div>
+                `).join('')}
+              </div>
+
+              ${tags.length ? `<div class="metaRow" style="margin-top:12px">${tags.map(t=>`<span class="metaPill">#${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+
+              ${c.bio ? `<p class="p" style="margin-top:12px">${escapeHtml(c.bio)}</p>` : ''}
+            </div>
+          </div>
+        </article>
+
+        <article class="panel reveal">
+          <div class="panel__head">
+            <div>
+              <div class="panel__title">RP‑анкета</div>
+              <div class="panel__sub">структура, история, действия в 2026</div>
+            </div>
+            <span class="badge">rp</span>
+          </div>
+
+          ${acc('Предисловие', rp2.preface, true)}
+          ${acc('История — начало', rp2.historyStart)}
+          ${acc('История — середина', rp2.historyMiddle)}
+          ${acc('Склейка', rp2.bridge)}
+          ${acc('Развитие событий до 2026', rp2.devPre2026)}
+          ${acc('Развитие событий в 2026', rp2.dev2026)}
+          ${acc('Начало сюжета 2026', rp2.plotStart2026)}
+          ${acc('Мораль группировки', rp2.morality)}
+          ${acc('Основные задачи и функции', rp2.tasks)}
+          ${acc('Основной посыл', rp2.message)}
+          ${acc('Финансирование', rp2.funding)}
+          ${acc('Отношение с копами', rp2.cops)}
+          ${acc('Кульминация', rp2.climax)}
+          ${acc('Операции 2026', rp2.ops2026)}
+        </article>
+      `;
+    }
+
+    function escapeHtml(s){
+      return String(s ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[ch]));
+    }
+    function block(title, value){
+      if (!value) return '';
+      return `<div class="mini" style="margin-top:12px"><div class="mini__k">${escapeHtml(title)}</div><div class="mini__v">${escapeHtml(value).replace(/\n/g,'<br>')}</div></div>`;
+    }
+
+    function acc(title, value, open = false){
+      if (!value) return '';
+      return `
+        <details class="acc" ${open ? 'open' : ''}>
+          <summary class="acc__sum">${escapeHtml(title)}</summary>
+          <div class="acc__body">${escapeHtml(value).replace(/\n/g,'<br>')}</div>
+        </details>
+      `;
+    }
+
+    function fmtDate(iso){
+      try{
+        const d = new Date(iso);
+        const dd = String(d.getDate()).padStart(2,'0');
+        const mm = String(d.getMonth()+1).padStart(2,'0');
+        const yy = d.getFullYear();
+        return `${dd}.${mm}.${yy}`;
+      } catch { return String(iso || ''); }
+    }
+
+    load().catch((e) => {
+      console.error(e);
+      state.querySelector('.panel__title').textContent = 'Ошибка загрузки';
+      state.querySelector('.panel__sub').textContent = 'Проверь Firestore rules и конфиг.';
+    });
+  </script>
+
+  <script type="module" src="./auth-ui.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
